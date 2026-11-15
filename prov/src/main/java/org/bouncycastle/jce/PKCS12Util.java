@@ -92,6 +92,36 @@ public class PKCS12Util
         return pfx.getEncoded(ASN1Encoding.DER);
     }
 
+    // A PBKDF2-derived PFX key (MAC or cipher key) is at most 64 bytes; anything beyond this is
+    // rejected as abusive.
+    private static final BigInteger MAX_KEY_LENGTH = BigInteger.valueOf(1024);
+
+    /**
+     * Validate a PBKDF2 keyLength from a PFX. As with the iteration count, the value arrives in a
+     * PFX whose MAC has not been checked yet and sizes the derivation output, so it has to be
+     * bounded before deriving; it is also multiplied by 8 at the call sites, which overflows to a
+     * negative bit count for a large enough value.
+     *
+     * @param keyLength the keyLength from the wire.
+     * @return the validated keyLength in bytes.
+     * @throws IllegalStateException if the keyLength is absent, not positive, or larger than the
+     *         maximum supported.
+     */
+    public static int validateKeyLength(BigInteger keyLength)
+    {
+        if (keyLength == null || keyLength.signum() <= 0)
+        {
+            throw new IllegalStateException("keyLength must be positive");
+        }
+
+        if (keyLength.compareTo(MAX_KEY_LENGTH) > 0)
+        {
+            throw new IllegalStateException("keyLength " + keyLength + " greater than " + MAX_KEY_LENGTH);
+        }
+
+        return BigIntegers.intValueExact(keyLength);
+    }
+
     public static int validateIterationCount(BigInteger ic)
     {
         if (ic.signum() < 0)

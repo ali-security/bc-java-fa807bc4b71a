@@ -2111,6 +2111,46 @@ public class PKCS12StoreTest
         }
     }
 
+    /*
+     * A PBKDF2 keyLength taken from a PFX arrives before any MAC has been checked and sizes the key
+     * derivation, so it has to be bounded before deriving; 268435456 also makes keyLength * 8
+     * overflow to a negative bit count, which previously escaped as a NegativeArraySizeException.
+     * This version of the PKCS#12 store has no PBMAC1 MacData support, so the bound is exercised
+     * directly on the validator.
+     */
+    private void testPBKdf2KeyLengthBound()
+        throws Exception
+    {
+        BigInteger[] badLengths = new BigInteger[]{
+            BigInteger.valueOf(1025),
+            BigInteger.valueOf(268435456),
+            BigInteger.ZERO,
+            null
+        };
+        String[] expectedMessages = new String[]{
+            "keyLength 1025 greater than 1024",
+            "keyLength 268435456 greater than 1024",
+            "keyLength must be positive",
+            "keyLength must be positive"
+        };
+
+        for (int i = 0; i != badLengths.length; i++)
+        {
+            try
+            {
+                PKCS12Util.validateKeyLength(badLengths[i]);
+                fail("PBKDF2 keyLength " + badLengths[i] + " not rejected");
+            }
+            catch (IllegalStateException e)
+            {
+                isTrue("unexpected message: " + e.getMessage(), e.getMessage().indexOf(expectedMessages[i]) >= 0);
+            }
+        }
+
+        isEquals(32, PKCS12Util.validateKeyLength(BigInteger.valueOf(32)));
+        isEquals(1024, PKCS12Util.validateKeyLength(BigInteger.valueOf(1024)));
+    }
+
     private void checkIterationCountRejected(StringBuffer accepted, String expected, String label, byte[] pfx)
     {
         try
@@ -2343,6 +2383,7 @@ public class PKCS12StoreTest
     {
         testIterationCount();
         testIterationCountDefaultLimit();
+        testPBKdf2KeyLengthBound();
         testPKCS12Store();
         testGOSTStore();
         testChainCycle();

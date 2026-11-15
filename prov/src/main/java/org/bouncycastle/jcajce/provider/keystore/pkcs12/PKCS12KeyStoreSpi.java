@@ -116,7 +116,6 @@ import org.bouncycastle.jce.interfaces.PKCS12BagAttributeCarrier;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.provider.JDKPKCS12StoreParameter;
 import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.BigIntegers;
 import org.bouncycastle.util.Integers;
 import org.bouncycastle.util.Properties;
 import org.bouncycastle.util.Strings;
@@ -711,7 +710,7 @@ public class PKCS12KeyStoreSpi
     {
         PBEKeySpec pbeSpec = new PBEKeySpec(password, pbeParams.getSalt(),
             PKCS12Util.validateIterationCount(pbeParams.getIterationCount()),
-            BigIntegers.intValueExact(pbeParams.getKeyLength()) * 8);
+            PKCS12Util.validateKeyLength(pbeParams.getKeyLength()) * 8);
         byte[] out;
 
         try
