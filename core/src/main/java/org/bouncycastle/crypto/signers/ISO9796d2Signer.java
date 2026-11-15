@@ -426,7 +426,7 @@ public class ISO9796d2Signer
             }
             catch (Exception e)
             {
-                return false;
+                return returnFalse(null);
             }
         }
         else
@@ -470,12 +470,14 @@ public class ISO9796d2Signer
                 {
                     if (!(trailer == ISOTrailers.TRAILER_SHA512_256 && sigTrail == 0x40CC))
                     {
+                        returnFalse(block);
                         throw new IllegalStateException("signer initialised with wrong digest for trailer " + sigTrail);
                     }
                 }
             }
             else
             {
+                returnFalse(block);
                 throw new IllegalArgumentException("unrecognised hash in signature");
             }
 
@@ -596,10 +598,14 @@ public class ISO9796d2Signer
 
     private boolean returnFalse(byte[] block)
     {
+        digest.reset();
         messageLength = 0;
 
         clearBlock(mBuf);
-        clearBlock(block);
+        if (block != null)
+        {
+            clearBlock(block);
+        }
 
         return false;
     }
